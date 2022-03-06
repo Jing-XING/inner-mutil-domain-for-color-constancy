@@ -128,7 +128,7 @@ class CreateNet(nn.Module):
     def __init__(self, model):
         super(CreateNet, self).__init__()
         self.squeezenet1_1 = nn.Sequential(*list(model.children())[0][:12])
-        self.fc = nn.Sequential(
+        self.fc_score = nn.Sequential(
             nn.MaxPool2d(kernel_size=3, stride=2, ceil_mode=True),
             nn.Conv2d(512, 64, kernel_size=6, stride=1, padding=3),
             nn.ReLU(inplace=True),
@@ -136,12 +136,35 @@ class CreateNet(nn.Module):
             nn.Conv2d(64, 3, kernel_size=1, stride=1),
             nn.ReLU(inplace=True)
         )
-
+        self.fc1 = nn.Sequential(
+            nn.MaxPool2d(kernel_size=3, stride=2, ceil_mode=True),
+            nn.Conv2d(512, 64, kernel_size=6, stride=1, padding=3),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=0.5),
+            nn.Conv2d(64, 3, kernel_size=1, stride=1),
+            nn.ReLU(inplace=True)
+        )
+        self.fc_2 = nn.Sequential(
+            nn.MaxPool2d(kernel_size=3, stride=2, ceil_mode=True),
+            nn.Conv2d(512, 64, kernel_size=6, stride=1, padding=3),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=0.5),
+            nn.Conv2d(64, 3, kernel_size=1, stride=1),
+            nn.ReLU(inplace=True)
+        )
+        self.fc_final = nn.Sequential(
+            nn.Conv2d(9, 3, kernel_size=1, stride=1),
+            nn.ReLU(inplace=True)
+        )
 
     def forward(self, x):
         x = self.squeezenet1_1(x)
-        x = self.fc(x)
-        return x
+        x_score = self.fc_score(x)
+        x1 = self.fc1(x)
+        x2 = self.fc2(x)
+        x_final = torch.cat([x,x1,x2], dim=1)
+        x_final = self.fc_final(x_final)
+        return x_score,x1,x2,x_final
 
 
 

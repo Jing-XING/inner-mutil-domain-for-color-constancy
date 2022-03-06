@@ -33,8 +33,8 @@ def get_angular_loss(vec1, vec2):
     dot = torch.sum(illum_normalized1*illum_normalized2, dim=1)
     dot = torch.clamp(dot, -safe_v, safe_v)
     angle = torch.acos(dot)*(180/math.pi)
-    loss = torch.mean(angle)
-    return loss
+    # loss = torch.mean(angle)
+    return angle
   
 
 def correct_image_nolinear(img, ill):

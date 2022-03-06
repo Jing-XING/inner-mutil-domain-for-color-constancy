@@ -105,26 +105,61 @@ softmax = nn.Softmax(dim=1)
 # train
 print('start train.....')
 best_val_loss = 100.0
+Med = 0
+
 for epoch in range(opt.nepoch):
     # train mode
     time_use1 = 0
     train_loss.reset()
     network.train()
     start = time.time()
+    loss_list=[]
+
     for i, data in enumerate(dataloader_train):
+
         optimizer.zero_grad()
+        loss_pred1 = []
+        loss_pred2 = []
+        loss_pred1=loss_pred1.cuda()
+        loss_pred2=loss_pred2.cuda()
         img, label, fn = data
         img = img.cuda()
         label = label.cuda()
-        pred = network(img)
-        pred_ill = torch.nn.functional.normalize(torch.sum(torch.sum(pred, 2), 2), dim=1)
-        loss = get_angular_loss(pred_ill, label)
+
+        pred_score, pred1, pred2, pred_final = network(img)
+        pred_score_ill = torch.nn.functional.normalize(torch.sum(torch.sum(pred_score, 2), 2), dim=1)
+        pred1_ill = torch.nn.functional.normalize(torch.sum(torch.sum(pred1, 2), 2), dim=1)
+        pred2_ill = torch.nn.functional.normalize(torch.sum(torch.sum(pred2, 2), 2), dim=1)
+        pred_final_ill = torch.nn.functional.normalize(torch.sum(torch.sum(pred_final, 2), 2), dim=1)
+
+        loss_score_list = get_angular_loss(pred_score_ill,label)
+        loss_pred1_list = get_angular_loss(pred1_ill,label)
+        loss_pred2_list = get_angular_loss(pred2_ill,label)
+        loss_final_list = get_angular_loss(pred_final_ill,label)
+        loss_list.append(loss_score)
+        L = pred1_ill.shape[0]
+
+        for m in range(L):
+            if loss_score_list[m]<=Med:
+                loss_pred1.append(loss_pred1_list[m])
+            else:
+                loss_pred2.append(loss_pred2_list[m])
+        loss1 = torch.mean(loss_pred1)
+        loss2 = torch.mean(loss_pred2)
+        loss_score = torch.mean(loss_score_list)
+        loss_final = torch.mean(loss_final_list)
+        loss =(loss_score+loss1+loss2+loss_final)/4
+
         loss.backward()
         train_loss.update(loss.item())
         optimizer.step()
-    time_use1 = time.time() - start
-    writer.add_scalar('loss/train_loss', train_loss.avg, epoch)
+        Med = torch.median(loss_list)
 
+    time_use1 = time.time() - start
+    writer.add_scalars('loss', {'train_loss_score': loss_score,
+                                   'train_loss1': loss1,
+                                   'train_loss2': loss2,
+                                'train_loss_final': loss_final}, epoch)
 
         # val mode
     time_use2 = 0
@@ -135,17 +170,49 @@ for epoch in range(opt.nepoch):
             network.eval()
             start = time.time()
             errors = []
+
             for i, data in enumerate(dataloader_test):
+
+                loss_pred1 = []
+                loss_pred2 = []
+                loss_pred1 = loss_pred1.cuda()
+                loss_pred2 = loss_pred2.cuda()
                 img, label, fn = data
                 img = img.cuda()
                 label = label.cuda()
-                pred = network(img)
-                pred_ill = torch.nn.functional.normalize(torch.sum(torch.sum(pred, 2), 2), dim=1)
-                loss = get_angular_loss(pred_ill, label)
+
+                pred_score, pred1, pred2, pred_final = network(img)
+                pred_score_ill = torch.nn.functional.normalize(torch.sum(torch.sum(pred_score, 2), 2), dim=1)
+                pred1_ill = torch.nn.functional.normalize(torch.sum(torch.sum(pred1, 2), 2), dim=1)
+                pred2_ill = torch.nn.functional.normalize(torch.sum(torch.sum(pred2, 2), 2), dim=1)
+                pred_final_ill = torch.nn.functional.normalize(torch.sum(torch.sum(pred_final, 2), 2), dim=1)
+
+                loss_score_list = get_angular_loss(pred_score_ill, label)
+                loss_pred1_list = get_angular_loss(pred1_ill, label)
+                loss_pred2_list = get_angular_loss(pred2_ill, label)
+                loss_final_list = get_angular_loss(pred_final_ill, label)
+                loss_list.append(loss_score)
+                L = pred1_ill.shape[0]
+
+                for m in range(L):
+                    if loss_score_list[m] <= Med:
+                        loss_pred1.append(loss_pred1_list[m])
+                    else:
+                        loss_pred2.append(loss_pred2_list[m])
+                loss1 = torch.mean(loss_pred1)
+                loss2 = torch.mean(loss_pred2)
+                loss_score = torch.mean(loss_score_list)
+                loss_final = torch.mean(loss_final_list)
+                loss = (loss_score + loss1 + loss2 + loss_final) / 4
+
                 val_loss.update(loss.item())
                 errors.append(loss.item())
             time_use2 = time.time() - start
-            writer.add_scalar('loss/val_loss', val_loss.avg, epoch)
+
+            writer.add_scalars('loss', {'val_loss_score': loss_score,
+                                        'val_loss1': loss1,
+                                        'val_loss2': loss2,
+                                        'val_loss_final': loss_final}, epoch)
 
     mean, median, trimean, bst25, wst25, pct95 = evaluate(errors)
     try:
