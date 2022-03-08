@@ -144,7 +144,7 @@ class CreateNet(nn.Module):
             nn.Conv2d(64, 3, kernel_size=1, stride=1),
             nn.ReLU(inplace=True)
         )
-        self.fc_2 = nn.Sequential(
+        self.fc2 = nn.Sequential(
             nn.MaxPool2d(kernel_size=3, stride=2, ceil_mode=True),
             nn.Conv2d(512, 64, kernel_size=6, stride=1, padding=3),
             nn.ReLU(inplace=True),
@@ -162,7 +162,7 @@ class CreateNet(nn.Module):
         x_score = self.fc_score(x)
         x1 = self.fc1(x)
         x2 = self.fc2(x)
-        x_final = torch.cat([x,x1,x2], dim=1)
+        x_final = torch.cat([x_score,x1,x2], dim=1)
         x_final = self.fc_final(x_final)
         return x_score,x1,x2,x_final
 
