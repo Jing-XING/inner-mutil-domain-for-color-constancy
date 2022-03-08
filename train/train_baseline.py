@@ -70,7 +70,15 @@ logtxt = os.path.join(log_path, 'fold' + str(opt.foldnum) + '.txt')
 writer=SummaryWriter(log_path)
 
 train_loss = AverageMeter()
+train_loss_score = AverageMeter()
+train_loss1 = AverageMeter()
+train_loss2 = AverageMeter()
+train_loss_final = AverageMeter()
 val_loss = AverageMeter()
+val_loss_score = AverageMeter()
+val_loss1 = AverageMeter()
+val_loss2 = AverageMeter()
+val_loss_final = AverageMeter()
 # load data
 dataset_train = ColorChecker(train=True, folds_num=opt.foldnum)
 dataloader_train = torch.utils.data.DataLoader(dataset_train, batch_size=opt.batch_size, shuffle=True,
@@ -111,6 +119,10 @@ for epoch in range(opt.nepoch):
     # train mode
     time_use1 = 0
     train_loss.reset()
+    train_loss_score.reset()
+    train_loss1.reset()
+    train_loss2.reset()
+    train_loss_final.reset()
     network.train()
     start = time.time()
     loss_list=[]
@@ -161,6 +173,10 @@ for epoch in range(opt.nepoch):
 
         loss.backward()
         train_loss.update(loss.item())
+        train_loss_score.update(loss_score.item())
+        train_loss1.update(loss1.item())
+        train_loss2.update(loss2.item())
+        train_loss_final.update(loss_final.item())
         optimizer.step()
     # #try M=median
     # ll=loss_list[0]
@@ -170,17 +186,25 @@ for epoch in range(opt.nepoch):
     M = train_loss.avg
 
     time_use1 = time.time() - start
-    writer.add_scalars('loss', {'train_loss_score': loss_score,
-                                   'train_loss1': loss1,
-                                   'train_loss2': loss2,
-                                'train_loss_final': loss_final}, epoch)
+    writer.add_scalars('trainloss', {'train_loss_score': train_loss_score.avg,
+                                   'train_loss1': train_loss1.avg,
+                                   'train_loss2': train_loss2.avg,
+                                'train_loss_final': train_loss_final.avg}, epoch)
 
         # val mode
     time_use2 = 0
     val_loss.reset()
+    val_loss_score.reset()
+    val_loss1.reset()
+    val_loss2.reset()
+    val_loss_final.reset()
     with torch.no_grad():
         if epoch % 5 == 0:
             val_loss.reset()
+            val_loss_score.reset()
+            val_loss1.reset()
+            val_loss2.reset()
+            val_loss_final.reset()
             network.eval()
             start = time.time()
             errors = []
@@ -213,18 +237,23 @@ for epoch in range(opt.nepoch):
                 loss = (loss_score + loss1 + loss2 + loss_final) / 4
 
                 val_loss.update(loss.item())
+                val_loss_score.update(loss_score.item())
+                val_loss1.update(loss1.item())
+                val_loss2.update(loss2.item())
+                val_loss_final.update(loss_final.item())
                 errors.append(loss.item())
             time_use2 = time.time() - start
 
-            writer.add_scalars('loss', {'val_loss_score': loss_score,
-                                        'val_loss1': loss1,
-                                        'val_loss2': loss2,
-                                        'val_loss_final': loss_final}, epoch)
+            writer.add_scalars('valloss', {'val_loss_score': val_loss_score.avg,
+                                        'val_loss1': val_loss1.avg,
+                                        'val_loss2': val_loss2.avg,
+                                        'val_loss_final': val_loss_final.avg}, epoch)
 
     mean, median, trimean, bst25, wst25, pct95 = evaluate(errors)
     try:
-        print('Epoch: %d,  Train_loss_list: %f,  Val_loss: %f: T_Time: %f, V_time: %f' % (
-        epoch, train_loss.avg, val_loss.avg, time_use1, time_use2))
+        print('Epoch: %d,  Train_loss_list: %f,%f,%f,%f,%f,  Val_loss: %f,%f,%f,%f,%f, T_Time: %f, V_time: %f' % (
+        epoch, train_loss.avg,train_loss_score.avg,train_loss1.avg,train_loss2.avg,train_loss_final.avg,
+        val_loss.avg,val_loss_score.avg,val_loss1.avg,val_loss2.avg,val_loss_final.avg, time_use1, time_use2))
     except:
         print('IOError...')
     if (val_loss.avg > 0 and val_loss.avg < best_val_loss):
