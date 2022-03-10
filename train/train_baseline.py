@@ -43,7 +43,7 @@ parser.add_argument('--workers', type=int, help='number of data loading workers'
 parser.add_argument('--lrate', type=float, default=0.0003, help='learning rate')
 parser.add_argument('--pth_path', type=str, default='')
 parser.add_argument('--foldnum', type=int, default=0, help='fold number')
-parser.add_argument('--model_name',type=str,default='inner multi domain',help='name of the model to be train')
+parser.add_argument('--model_name',type=str,default='inner_multi_domain',help='name of the model to be train')
 parser.add_argument('--cudanum',type=str,default='0',help='cuda number')
 
 opt = parser.parse_args()
@@ -63,7 +63,9 @@ log_path = '../log'
 log_path = os.path.join(log_path,opt.model_name)
 if not os.path.exists(log_path):
     os.mkdir(log_path)
-
+log_path = os.path.join(log_path,'fold'+ str(opt.foldnum))
+if not os.path.exists(log_path):
+    os.mkdir(log_path)
 logtxt = os.path.join(log_path, 'fold' + str(opt.foldnum) + '.txt')
 
 # visualization

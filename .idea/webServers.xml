@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="WebServers">
+    <option name="servers">
+      <webServer id="517f0e44-119b-4a5b-9030-d43caabee6cb" name="197 inner mutil domain" url="http://222.201.134.197">
+        <fileTransfer accessType="SFTP" host="222.201.134.197" port="22" sshConfigId="06279116-12e5-4403-95ae-409b124cc0c4" sshConfig="lab-xing.jing@222.201.134.197:22">
+          <advancedOptions>
+            <advancedOptions dataProtectionLevel="Private" passiveMode="true" shareSSLContext="true" />
+          </advancedOptions>
+        </fileTransfer>
+      </webServer>
+    </option>
+  </component>
+</project>
