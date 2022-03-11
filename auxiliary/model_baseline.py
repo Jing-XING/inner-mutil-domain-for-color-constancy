@@ -165,9 +165,42 @@ class CreateNet(nn.Module):
         x_final = torch.cat([x_score,x1,x2], dim=1)
         x_final = self.fc_final(x_final)
         return x_score,x1,x2,x_final
+class CreateNet_baseline(nn.Module):
+    def __init__(self, model):
+        super(CreateNet_baseline, self).__init__()
+        self.squeezenet1_1 = nn.Sequential(*list(model.children())[0][:12])
+        self.fc = nn.Sequential(
+            nn.MaxPool2d(kernel_size=3, stride=2, ceil_mode=True),
+            nn.Conv2d(512, 64, kernel_size=6, stride=1, padding=3),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=0.5),
+            nn.Conv2d(64, 3, kernel_size=1, stride=1),
+            nn.ReLU(inplace=True)
+        )
 
 
+    def forward(self, x):
+        x = self.squeezenet1_1(x)
+        x = self.fc(x)
+        return x
+class CreateNet_predictor(nn.Module):
+    def __init__(self, model):
+        super(CreateNet_predictor, self).__init__()
+        self.squeezenet1_1 = nn.Sequential(*list(model.children())[0][:12])
+        self.fc = nn.Sequential(
+            nn.MaxPool2d(kernel_size=3, stride=2, ceil_mode=True),
+            nn.Conv2d(512, 64, kernel_size=6, stride=1, padding=3),
+            nn.ReLU(inplace=True),
+            nn.Dropout(p=0.5),
+            nn.Conv2d(64, 1, kernel_size=1, stride=1),
+            nn.ReLU(inplace=True)
 
+        )
+
+    def forward(self, x):
+        x = self.squeezenet1_1(x)
+        x = self.fc(x)
+        return x
 if __name__ == '__main__':
     network = CreateNet_1().cuda()
     input = torch.randn([16, 3, 256, 256]).cuda()
