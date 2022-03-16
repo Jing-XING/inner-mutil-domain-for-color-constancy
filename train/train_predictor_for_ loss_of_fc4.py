@@ -22,7 +22,7 @@ import torch.utils.data
 from torchvision import utils as vutils
 from torch.utils.tensorboard import SummaryWriter
 from torch.autograd import Variable
-from model_baseline import CreateNet, squeezenet1_1
+from model_baseline import CreateNet_baseline,CreateNet_predictor, squeezenet1_1
 from dataset import *
 from Utils import *
 
@@ -136,9 +136,9 @@ for epoch in range(opt.nepoch):
         label = label.cuda()
         pred = network1(img)
         loss_predicted = network2(img)
-        loss_predicted = torch.nn.functional.normalize(torch.sum(torch.sum(loss_predicted, 2), 2), dim=1)
-        pred_ill = torch.nn.functional.normalize(torch.sum(torch.sum(pred, 2), 2), dim=1)
-        loss = get_angular_loss(pred_ill, label)
+        loss_predicted =torch.sum(torch.sum(loss_predicted, 2), 2)
+        pred_ill =  torch.nn.functional.normalize(torch.sum(torch.sum(pred, 2), 2), dim=1)
+        loss = get_angular_loss(pred_ill, label).view(pred_ill.shape[0],1)
         predictor_loss = mseloss(loss, loss_predicted)
         predictor_loss.backward()
         train_loss_predicted.update((torch.mean(loss_predicted)).item())
@@ -168,14 +168,14 @@ for epoch in range(opt.nepoch):
                 label = label.cuda()
                 pred = network1(img)
                 loss_predicted = network2(img)
-                loss_predicted = torch.nn.functional.normalize(torch.sum(torch.sum(loss_predicted, 2), 2), dim=1)
+                loss_predicted = torch.sum(torch.sum(loss_predicted, 2), 2)
                 pred_ill = torch.nn.functional.normalize(torch.sum(torch.sum(pred, 2), 2), dim=1)
-                loss = get_angular_loss(pred_ill, label)
+                loss = get_angular_loss(pred_ill, label).view(pred_ill.shape[0],1)
                 predictor_loss = mseloss(loss_predicted,loss)
                 val_loss.update((torch.mean(loss)).item())
                 val_loss_predicted.update((torch.mean(loss_predicted)).item())
-                val_predictor_loss.update(predictor_loss)
-                errors.append(val_predictor_loss.item())
+                val_predictor_loss.update(predictor_loss.item())
+                errors.append(predictor_loss.item())
             time_use2 = time.time() - start
             writer.add_scalars('valloss', {'val_loss': val_loss.avg,
                                              'val_predictior_loss': val_predictor_loss.avg,
